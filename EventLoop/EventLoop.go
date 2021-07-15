@@ -2,7 +2,7 @@
  * @Description: EventLoop事件循环模块
  * @Author: Rocky Hoo
  * @Date: 2021-07-09 12:44:10
- * @LastEditTime: 2021-07-13 16:26:52
+ * @LastEditTime: 2021-07-15 16:18:08
  * @LastEditors: Please set LastEditors
  * @CopyRight: XiaoPeng Studio
  * Copyright (c) 2021 XiaoPeng Studio
@@ -79,8 +79,8 @@ func (el *EventLoop) Run() {
  * @return {*}
  * @param {interface{}} data
  */
-func (el *EventLoop)SetTrigerDataPtr(data interface{}){
-	el.triger_data_ptr=&data
+func (el *EventLoop) SetTrigerDataPtr(data interface{}) {
+	el.triger_data_ptr = &data
 }
 
 /**
@@ -196,8 +196,8 @@ func (el *EventLoop) TikTok() {
  * @param {EventProc} event_proc
  * @param {interface{}} event_data
  */
-func (el *EventLoop) RegisterEvent(fd int, mask uint32, event_proc EventProc, event_data interface{}) {
-	el.Register(fd, mask, EventData{
+func (el *EventLoop) RegisterEvent(fd int, mask uint32, event_proc EventProc, event_data interface{}) error {
+	return el.Register(fd, mask, EventData{
 		e:    event_proc,
 		data: event_data,
 	})
