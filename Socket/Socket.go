@@ -2,7 +2,7 @@
  * @Description: Socket的封装类(模式perthred perloop)
  * @Author: Rocky Hoo
  * @Date: 2021-07-15 12:48:10
- * @LastEditTime: 2021-07-15 17:30:32
+ * @LastEditTime: 2021-07-18 08:18:38
  * @LastEditors: Please set LastEditors
  * @CopyRight: XiaoPeng Studio
  * Copyright (c) 2021 XiaoPeng Studio
@@ -12,6 +12,7 @@ package socket
 import (
 	"main/EventLoop"
 	enum "main/Utils/Enum"
+	err "main/Utils/Error"
 	"net"
 	"strconv"
 	"syscall"
@@ -27,7 +28,46 @@ type Socket struct {
 }
 
 /**
- * @description:获取socket对应网络类型的地址格式
+ * @description:解析格式形如(host:port)的地址
+ * @param {string} addr
+ * @return {*}
+ */
+func parseIpv4Addr(addr string) (net.IP, int, error) {
+	ipStr, portStr, errs := net.SplitHostPort(addr)
+	if errs != nil {
+		return nil, -1, errs
+	}
+	// convert ip to 4-bytes
+	ip := net.ParseIP(ipStr).To4()
+	if ip == nil {
+		return nil, -1, &err.IP_FORMAT_ERR{
+			IP: ipStr,
+		}
+	}
+	port, errs := strconv.Atoi(portStr)
+	if errs != nil {
+		return nil, -1, errs
+	}
+	return ip, port, nil
+}
+
+/**
+ * @description:根据sockaddr反向解析出socket的ip和地址
+ * @param {syscall.Sockaddr} sa
+ * @return {*}
+ */
+func resolveSockaddrInfo(sa syscall.Sockaddr) (string, string, int, error) {
+	switch v := sa.(type) {
+	case *syscall.SockaddrInet4:
+		return "tcp4", net.IP(v.Addr[:]).String(), v.Port, nil
+	}
+	return "", "", -1, &err.UNKNOW_NETWORK_ERR{
+		Network: "unknown",
+	}
+}
+
+/**
+ * @description:将ip地址转换成对应的网络协议的Sockaddr对象
  * @param  {*}
  * @return {*}
  * @param {*} network
@@ -150,13 +190,16 @@ func (l *Listener) acceptEvent(el *EventLoop.EventLoop, data interface{}) enum.A
 		return enum.CONTINUE
 	}
 	if err = syscall.SetNonblock(nfd, true); err != nil {
+		syscall.Close(nfd)
 		return enum.CONTINUE
 	}
 	c, err := NewConn(nfd, sa, el)
 	if err != nil {
 		return enum.CONTINUE
 	}
-	return enum.CONTINUE
+	el.RegisterEvent(c.fd, enum.EVENT_READABLE, c.readEvent, nil)
+	el.SetTrigerDataPtr([]string{c.network, c.addr, strconv.Itoa(c.port)})
+	return enum.TRIGGER_OPEN_EVENT
 }
 
 /**
@@ -183,14 +226,19 @@ type Conn struct {
  * @param {*EventLoop.EventLoop} event_loop(与accept操作共享一个eventloop)
  */
 func NewConn(fd int, sa syscall.Sockaddr, event_loop *EventLoop.EventLoop) (*Conn, error) {
-	conn:=&Conn{&Socket{
-		network:     "",
-		address:     "",
-		port:        0,
+	network, addr, port, err := resolveSockaddrInfo(sa)
+	if err != nil {
+		return nil, err
+	}
+	conn := &Conn{&Socket{
+		network:     network,
+		address:     addr,
+		port:        port,
 		sa:          sa,
 		in:          []byte{},
 		out:         []byte{},
 		closedCount: 0,
 		fd:          fd,
 	}}
+	return conn, nil
 }

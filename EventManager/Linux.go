@@ -2,7 +2,7 @@
  * @Description: 事件管理器
  * @Author: Rocky Hoo
  * @Date: 2021-07-01 10:21:37
- * @LastEditTime: 2021-07-12 16:25:59
+ * @LastEditTime: 2021-07-17 09:01:10
  * @LastEditors: Please set LastEditors
  * @CopyRight:
  * Copyright (c) 2021 XiaoPeng Studio
@@ -136,28 +136,28 @@ func (p *Selector) Register(fd int, event_mask uint32, Data interface{}) error {
  * @param {int} fd socket's fd
  * @param {uint32} event_mask
  */
-func (p *Selector) UnRegister(fd int, event_mask uint32) (*SelectorKey,error) {
+func (p *Selector) UnRegister(fd int, event_mask uint32) (*SelectorKey, error) {
 	if fd > len(p.selectorykeys) {
-		return nil,&err.FD_EXEC_LIMIT_ERROR{
+		return nil, &err.FD_EXEC_LIMIT_ERROR{
 			FD: fd,
 		}
 	}
 	selectorkey := p.selectorykeys[fd]
-	selectorkey.Data=nil
+	selectorkey.Data = nil
 	p.selectorykeys[fd] = nil
 	if selectorkey == nil || selectorkey.event_mask&event_mask == 0 {
 		log.Printf("EventManager.UnRegister:UnRegister failed,selectorkey or event do not exist!\n")
-		return nil,nil
+		return nil, nil
 	}
 	epollevent, err := InitEpollEvent(selectorkey, event_mask)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	op := syscall.EPOLL_CTL_DEL
 	if err := syscall.EpollCtl(p.epfd, op, fd, epollevent); err != nil {
-		return nil,err
+		return nil, err
 	}
-	return selectorkey,nil
+	return selectorkey, nil
 }
 
 /**
@@ -171,33 +171,33 @@ func (p *Selector) GetData(fd int) interface{} {
 }
 
 /**
- * @description:
- 1.使用EpollWait监听事件在超时时间内是否有响应 
- 2.通过p.selectorkey[fd]得到对应的event;记录下来响应的事件和响应的事件类型，最终返回出去
- * @param  {*}
- * @return {*}
- * @param {int} time 超时等待时间
- */
-func (p *Selector) Poll(time int) ([]*SelectorKey,[]uint32,error) {
+* @description:
+1.使用EpollWait监听事件在超时时间内是否有响应
+2.通过p.selectorkey[fd]得到对应的event;记录下来响应的事件和响应的事件类型，最终返回出去
+* @param  {*}
+* @return {*}
+* @param {int} time 超时等待时间
+*/
+func (p *Selector) Poll(time int) ([]*SelectorKey, []uint32, error) {
 	events := make([]syscall.EpollEvent, len(p.selectorykeys))
 	n, err := syscall.EpollWait(p.epfd, events, time)
 	if err != nil {
-		return nil,nil,err
+		return nil, nil, err
 	}
 	var awake_event, mask = make([]*SelectorKey, n), make([]uint32, n)
 	for i := 0; i < n; i++ {
 		epoll_event := &events[i]
 		awake_event[i] = p.selectorykeys[epoll_event.Fd]
 
-		if (epoll_event.Events&syscall.EPOLLERR!=0)&&(epoll_event.Events&syscall.EPOLLRDHUP!=0){
+		if (epoll_event.Events&syscall.EPOLLERR != 0) && (epoll_event.Events&syscall.EPOLLRDHUP != 0) {
 			continue
 		}
 		if epoll_event.Events&syscall.EPOLLIN != 0 {
-			mask[i]|=syscall.EPOLLIN
+			mask[i] |= syscall.EPOLLIN
 		}
-		if epoll_event.Events&syscall.EPOLLOUT!=0{
-			mask[i]|=syscall.EPOLLOUT
+		if epoll_event.Events&syscall.EPOLLOUT != 0 {
+			mask[i] |= syscall.EPOLLOUT
 		}
 	}
-	return awake_event,mask,nil
+	return awake_event, mask, nil
 }
