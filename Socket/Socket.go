@@ -2,7 +2,7 @@
  * @Description: Socket的封装类(模式perthred perloop)
  * @Author: Rocky Hoo
  * @Date: 2021-07-15 12:48:10
- * @LastEditTime: 2021-07-19 23:54:10
+ * @LastEditTime: 2021-07-20 16:08:28
  * @LastEditors: Please set LastEditors
  * @CopyRight: XiaoPeng Studio
  * Copyright (c) 2021 XiaoPeng Studio
@@ -78,8 +78,20 @@ func resolveSockaddrInfo(sa syscall.Sockaddr) (string, string, int, error) {
  * @param {*} network
  * @param {string} addr
  */
-func getSockAddr(network, addr string) (int, error) {
-	return 0, nil
+func getSockAddr(network, addr string) (syscall.Sockaddr, error) {
+	switch network {
+	case "tcp4":
+		ip, port, errors := parseIpv4Addr(addr)
+		if errors != nil {
+			return nil, errors
+		}
+		sa := &syscall.SockaddrInet4{Port: port}
+		copy(sa.Addr[:], ip[:4])
+		return sa, nil
+	}
+	return nil, &err.UNKNOW_NETWORK_ERR{
+		Network: network,
+	}
 }
 
 /**
@@ -319,8 +331,9 @@ func (c *Conn) writeEvent(el *EventLoop.EventLoop, _ interface{}) enum.Action {
 		//读了前面部分数据,剩下的数据从n开始读
 		c.out = c.out[n:]
 	}
-	if c.closedCount == 0 {
-		el.RegisterEvent(c.fd, enum.EVENT_READABLE, c.readEvent, nil)
-	}
+	// 重复注册
+	// if c.closedCount == 0 {
+	// 	el.RegisterEvent(c.fd, enum.EVENT_READABLE, c.readEvent, nil)
+	// }
 	return action
 }
