@@ -2,7 +2,7 @@
  * @Description: Socket的封装类(模式perthred perloop)
  * @Author: Rocky Hoo
  * @Date: 2021-07-15 12:48:10
- * @LastEditTime: 2021-07-18 08:18:38
+ * @LastEditTime: 2021-07-19 23:54:10
  * @LastEditors: Please set LastEditors
  * @CopyRight: XiaoPeng Studio
  * Copyright (c) 2021 XiaoPeng Studio
@@ -18,6 +18,11 @@ import (
 	"syscall"
 )
 
+/**
+ * @description:连接套接字和监听套接字都复用此结构体(注意连接套接字和监听套接字的区别)
+ * @param {*}
+ * @return {*}
+ */
 type Socket struct {
 	network, address string //network:tcp/udp address:ip adress
 	port             int
@@ -136,7 +141,7 @@ func (s *Socket) Shutdown(how int) error {
 	return syscall.Shutdown(s.fd, how)
 }
 
-// Listener是Socket的一个装饰器m主要负责连接创立过程的响应处理
+// Listener是Socket的一个装饰器m主要负责连接创立过程的响应处理(监听套接字)
 type Listener struct {
 	*Socket
 }
@@ -185,20 +190,20 @@ func (l *Listener) BindAndListen() error {
  */
 func (l *Listener) acceptEvent(el *EventLoop.EventLoop, data interface{}) enum.Action {
 	// l.fd为socket的监听套接字，整个服务器socket运行时只有一份,nfd为已连接套接字，即每次accept取出一个可用连接后都会返回一个nfdnfd对应的是
-	nfd, sa, err := syscall.Accept(l.fd)
+	confd, sa, err := syscall.Accept(l.fd)
 	if err != nil {
 		return enum.CONTINUE
 	}
-	if err = syscall.SetNonblock(nfd, true); err != nil {
-		syscall.Close(nfd)
+	if err = syscall.SetNonblock(confd, true); err != nil {
+		syscall.Close(confd)
 		return enum.CONTINUE
 	}
-	c, err := NewConn(nfd, sa, el)
+	c, err := NewConn(confd, sa, el)
 	if err != nil {
 		return enum.CONTINUE
 	}
 	el.RegisterEvent(c.fd, enum.EVENT_READABLE, c.readEvent, nil)
-	el.SetTrigerDataPtr([]string{c.network, c.addr, strconv.Itoa(c.port)})
+	el.SetTrigerDataPtr([]string{c.network, c.address, strconv.Itoa(c.port)})
 	return enum.TRIGGER_OPEN_EVENT
 }
 
@@ -212,7 +217,7 @@ func (l *Listener) RegisterAccept() error {
 	return event_loop.RegisterEvent(l.fd, enum.EVENT_READABLE, l.acceptEvent, nil)
 }
 
-// socket的装饰器,主要负责数据读写的工作
+// socket的装饰器,主要负责数据读写的工作(此为连接套接字,即其中维护的是连接描述符,每与一个客户端建立连接就会创建一个连接套接字)
 type Conn struct {
 	*Socket
 }
@@ -221,11 +226,11 @@ type Conn struct {
  * @description: Conn构造函数
  * @param  {*}
  * @return {*}
- * @param {int} fd
+ * @param {int} confd socket与客户端的一个连接描述符
  * @param {syscall.Sockaddr} sa
  * @param {*EventLoop.EventLoop} event_loop(与accept操作共享一个eventloop)
  */
-func NewConn(fd int, sa syscall.Sockaddr, event_loop *EventLoop.EventLoop) (*Conn, error) {
+func NewConn(confd int, sa syscall.Sockaddr, event_loop *EventLoop.EventLoop) (*Conn, error) {
 	network, addr, port, err := resolveSockaddrInfo(sa)
 	if err != nil {
 		return nil, err
@@ -238,7 +243,84 @@ func NewConn(fd int, sa syscall.Sockaddr, event_loop *EventLoop.EventLoop) (*Con
 		in:          []byte{},
 		out:         []byte{},
 		closedCount: 0,
-		fd:          fd,
+		fd:          confd,
 	}}
 	return conn, nil
+}
+
+/**
+ * @description:提供给上层调用的api;通过readEvent将数据读到Conn.in后,从Conn.in中读出去
+ * @param {*}
+ * @return {*}
+ */
+func (c *Conn) Read() []byte {
+	res := c.in
+	c.in = []byte{}
+	return res
+}
+
+/**
+ * @description:将数据写入到c.out，供socket发出
+ * @param {[]byte} data
+ * @return {*}
+ */
+func (c *Conn) Write(data []byte) {
+	c.out = append(c.out, data...)
+}
+
+/**
+ * @description:执行一次读操作
+ * @param {*EventLoop.EventLoop} el
+ * @param {interface{}} data
+ * @return {*}
+ */
+func (c *Conn) readEvent(el *EventLoop.EventLoop, _ interface{}) enum.Action {
+	var (
+		action enum.Action
+		inBuf  = [1024]byte{}
+	)
+	n, err := syscall.Read(c.fd, inBuf[:])
+	//以下报错都是非阻塞操作中可以忽略的错误,参考:https://www.cnblogs.com/bastard/archive/2013/04/10/3012724.html
+	if err == syscall.EINTR || err == syscall.EAGAIN || err == syscall.EWOULDBLOCK {
+		action = enum.CONTINUE
+	} else if n <= 0 {
+		// n小于0,说明此时收到对端发来的关闭信号
+		c.Shutdown(syscall.SHUT_RD)
+		action = enum.SHUTDOWN_RD
+	} else {
+		// inBuf切片被打散传入
+		c.in = append(c.in, inBuf[:n]...)
+		el.SetTrigerDataPtr(c)
+		action = enum.TRIGGER_DATA_EVENT
+	}
+	// 读时间注册完后注册监听写事件
+	if c.closedCount == 0 {
+		el.RegisterEvent(c.fd, enum.EVENT_WRITABLE, c.writeEvent, nil)
+	}
+	return action
+}
+
+/**
+ * @description:执行一次socket写事件
+ * @param {*EventLoop.EventLoop} el
+ * @param {interface{}} _
+ * @return {*}
+ */
+func (c *Conn) writeEvent(el *EventLoop.EventLoop, _ interface{}) enum.Action {
+	var action enum.Action
+	if len(c.out) == 0 {
+		return enum.CONTINUE
+	}
+	n, err := syscall.Write(c.fd, c.out)
+	if err != nil || n <= 0 {
+		c.Shutdown(syscall.SHUT_WR)
+		action = enum.SHUTDOWN_WR
+	} else {
+		//读了前面部分数据,剩下的数据从n开始读
+		c.out = c.out[n:]
+	}
+	if c.closedCount == 0 {
+		el.RegisterEvent(c.fd, enum.EVENT_READABLE, c.readEvent, nil)
+	}
+	return action
 }
