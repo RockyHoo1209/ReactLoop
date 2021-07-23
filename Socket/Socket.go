@@ -2,7 +2,7 @@
  * @Description: Socket的封装类(模式perthred perloop)
  * @Author: Rocky Hoo
  * @Date: 2021-07-15 12:48:10
- * @LastEditTime: 2021-07-20 16:08:28
+ * @LastEditTime: 2021-07-23 23:26:48
  * @LastEditors: Please set LastEditors
  * @CopyRight: XiaoPeng Studio
  * Copyright (c) 2021 XiaoPeng Studio
@@ -108,7 +108,13 @@ func NewSocket(network, addr string) (*Socket, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := syscall.SetNonblock(fd, true); err != nil {
+		return nil, err
+	}
 	sa, err := getSockAddr(network, addr)
+	if err != nil {
+		return nil, err
+	}
 	var portStr string
 	addr, portStr, err = net.SplitHostPort(addr)
 	if err != nil {
@@ -224,8 +230,8 @@ func (l *Listener) acceptEvent(el *EventLoop.EventLoop, data interface{}) enum.A
  * @param  {*}
  * @return {*}
  */
-func (l *Listener) RegisterAccept() error {
-	event_loop := EventLoop.New()
+func (l *Listener) RegisterAccept(event_loop *EventLoop.EventLoop) error {
+	// event_loop := EventLoop.New()
 	return event_loop.RegisterEvent(l.fd, enum.EVENT_READABLE, l.acceptEvent, nil)
 }
 
