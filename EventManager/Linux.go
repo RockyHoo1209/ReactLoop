@@ -2,7 +2,7 @@
  * @Description: 事件管理器
  * @Author: Rocky Hoo
  * @Date: 2021-07-01 10:21:37
- * @LastEditTime: 2021-07-17 09:01:10
+ * @LastEditTime: 2021-07-24 22:48:16
  * @LastEditors: Please set LastEditors
  * @CopyRight:
  * Copyright (c) 2021 XiaoPeng Studio
@@ -65,8 +65,9 @@ func (p *Selector) Close() {
  * @param {*syscall.EpollEvent} epollevent
  * @param {uint32} mask
  * @param {uint32} op epoll需要监听的操作事件
+ * @param {interface{}} data 内存储数据和执行操作的函数(需要每轮更新)
  */
-func InitEpollEvent(selectorkey *SelectorKey, event_mask uint32) (*syscall.EpollEvent, error) {
+func InitEpollEvent(selectorkey *SelectorKey, event_mask uint32, data interface{}) (*syscall.EpollEvent, error) {
 	// 为epoll事件注册进对应事件的fd
 	epollevent := &syscall.EpollEvent{
 		Fd: int32(selectorkey.Fd),
@@ -74,9 +75,11 @@ func InitEpollEvent(selectorkey *SelectorKey, event_mask uint32) (*syscall.Epoll
 	switch {
 	case event_mask&enum.EVENT_READABLE != 0:
 		epollevent.Events |= syscall.EPOLLIN
-		fallthrough
+		selectorkey.Data = data
+		// fallthrough 忽略case真假 强制往下执行
 	case event_mask&enum.EVENT_WRITABLE != 0:
 		epollevent.Events |= syscall.EPOLLOUT
+		selectorkey.Data = data
 	default:
 		return nil, &err.UNKNOW_MASK_ERR{
 			Mask: selectorkey.event_mask,
@@ -114,9 +117,10 @@ func (p *Selector) Register(fd int, event_mask uint32, Data interface{}) error {
 		op = syscall.EPOLL_CTL_ADD
 	} else {
 		op = syscall.EPOLL_CTL_MOD
+		// 需要更新Data
 	}
 	selectorkey.event_mask = event_mask
-	epollevent, err := InitEpollEvent(selectorkey, event_mask)
+	epollevent, err := InitEpollEvent(selectorkey, event_mask, Data)
 	if err != nil {
 		log.Panic(err)
 		return err
@@ -149,7 +153,7 @@ func (p *Selector) UnRegister(fd int, event_mask uint32) (*SelectorKey, error) {
 		log.Printf("EventManager.UnRegister:UnRegister failed,selectorkey or event do not exist!\n")
 		return nil, nil
 	}
-	epollevent, err := InitEpollEvent(selectorkey, event_mask)
+	epollevent, err := InitEpollEvent(selectorkey, event_mask, nil)
 	if err != nil {
 		return nil, err
 	}

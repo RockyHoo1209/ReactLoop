@@ -2,7 +2,7 @@
  * @Description: Socket的封装类(模式perthred perloop)
  * @Author: Rocky Hoo
  * @Date: 2021-07-15 12:48:10
- * @LastEditTime: 2021-07-23 23:26:48
+ * @LastEditTime: 2021-07-24 22:49:35
  * @LastEditors: Please set LastEditors
  * @CopyRight: XiaoPeng Studio
  * Copyright (c) 2021 XiaoPeng Studio
@@ -221,6 +221,7 @@ func (l *Listener) acceptEvent(el *EventLoop.EventLoop, data interface{}) enum.A
 		return enum.CONTINUE
 	}
 	el.RegisterEvent(c.fd, enum.EVENT_READABLE, c.readEvent, nil)
+	// accept的时候通过修改trigerPtr输出对应信息
 	el.SetTrigerDataPtr([]string{c.network, c.address, strconv.Itoa(c.port)})
 	return enum.TRIGGER_OPEN_EVENT
 }
@@ -231,7 +232,6 @@ func (l *Listener) acceptEvent(el *EventLoop.EventLoop, data interface{}) enum.A
  * @return {*}
  */
 func (l *Listener) RegisterAccept(event_loop *EventLoop.EventLoop) error {
-	// event_loop := EventLoop.New()
 	return event_loop.RegisterEvent(l.fd, enum.EVENT_READABLE, l.acceptEvent, nil)
 }
 
@@ -308,6 +308,7 @@ func (c *Conn) readEvent(el *EventLoop.EventLoop, _ interface{}) enum.Action {
 	} else {
 		// inBuf切片被打散传入
 		c.in = append(c.in, inBuf[:n]...)
+		// 将连接socket的指针存入eventloop,则可以通过这个指针访问conn(委托模式)
 		el.SetTrigerDataPtr(c)
 		action = enum.TRIGGER_DATA_EVENT
 	}
@@ -337,9 +338,9 @@ func (c *Conn) writeEvent(el *EventLoop.EventLoop, _ interface{}) enum.Action {
 		//读了前面部分数据,剩下的数据从n开始读
 		c.out = c.out[n:]
 	}
-	// 重复注册
-	// if c.closedCount == 0 {
-	// 	el.RegisterEvent(c.fd, enum.EVENT_READABLE, c.readEvent, nil)
-	// }
+	// 需要再用读事件覆盖写事件
+	if c.closedCount == 0 {
+		el.RegisterEvent(c.fd, enum.EVENT_READABLE, c.readEvent, nil)
+	}
 	return action
 }

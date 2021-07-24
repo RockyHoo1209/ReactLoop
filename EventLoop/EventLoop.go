@@ -1,8 +1,8 @@
 /*
- * @Description: EventLoop事件循环模块
+ * @Description: EventLoop事件循环模块(目前一个server只有一个eventloop,通过不断修改triger_ptr来实现不同的操作)
  * @Author: Rocky Hoo
  * @Date: 2021-07-09 12:44:10
- * @LastEditTime: 2021-07-23 23:21:57
+ * @LastEditTime: 2021-07-24 14:23:58
  * @LastEditors: Please set LastEditors
  * @CopyRight: XiaoPeng Studio
  * Copyright (c) 2021 XiaoPeng Studio
@@ -27,7 +27,7 @@ type EventLoop struct {
 	user_events            []*UserEvent  //用户定义事件
 	interval               time.Duration //定义事件循环的轮询周期
 	done                   bool          //事件是否完成的标志位,也是是否退出循环的标志位
-	triger_data_ptr        *interface{}  //指定触发器数据的指针
+	triger_data_ptr        *interface{}  //指定触发器特定数据的指针(通过委托指针实现不同eventloop的功能)
 }
 
 /**
@@ -74,7 +74,7 @@ func (el *EventLoop) Run() {
 }
 
 /**
- * @description: 定时器触发时所需的数据
+ * @description: 设置特定指针，通过指针触发不同的操作
  * @param  {*}
  * @return {*}
  * @param {interface{}} data
@@ -118,7 +118,7 @@ func (el *EventLoop) FindNearestTask() *UserEvent {
 }
 
 /**
- * @description:传入需要执行的Action类型并执行
+ * @description:根据传入的action类型进行相应的操作,此函数对应着发生系统事件后，客户需要进行的后续操作如Read()
  * @param  {*}
  * @return {*}
  * @param {Action} action
@@ -157,7 +157,7 @@ func (el *EventLoop) processAction(action enum.Action, fd int) {
 		}
 	case enum.CONTINUE:
 	}
-	// 将数据与操作进行一次绑定后，需要清空数据
+	// 将数据与操作进行一次绑定后，需要清空数据,下一次到来的事件的触发指针可能不一样
 	el.triger_data_ptr = nil
 }
 
@@ -214,7 +214,13 @@ func (el *EventLoop) UnRegisterEvent(fd int, mask uint32) {
 	el.UnRegister(fd, mask)
 }
 
-type Process func(el *EventLoop, data interface{})
+/**
+ * @description:
+ * @param {*EventLoop} el
+ * @param {*interface{}} triger_data_ptr 触发操作相对应的指针
+ * @return {*}
+ */
+type TrigerProcess func(el *EventLoop, triger_data_ptr *interface{})
 
 /**
  * @description:定义一个事件，
@@ -224,7 +230,7 @@ type Process func(el *EventLoop, data interface{})
  * @return {*}
  */
 type Event struct {
-	Open, Close, Serving, Data Process
+	Open, Close, Serving, Data TrigerProcess
 }
 
 /**
@@ -234,7 +240,7 @@ type Event struct {
  */
 type UserEvent struct {
 	nexttriggerTime time.Time     //下一次需要执行的具体时间
-	Task            Process       //执行事件的函数
+	Task            TrigerProcess //执行事件的函数
 	interval        time.Duration //运行的时间周期间隔
 }
 
