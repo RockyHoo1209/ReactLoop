@@ -1,9 +1,9 @@
 /*
- * @Author:RockyHoo
- * @Date: 2021-07-25 12:20:11
- * @LastEditTime: 2021-07-25 12:28:25
+ * @Author: RockyHoo
+ * @Date: 2021-07-25 12:32:00
+ * @LastEditTime: 2021-07-25 12:53:59
  * @LastEditors: Please set LastEditors
- * @Description: 测试reactloop使用(ping-pong)
+ * @Description: 测试用户定义的周期函数
  * @FilePath: /ReactLoop/main.go
  */
 package main
@@ -11,36 +11,24 @@ package main
 import (
 	"fmt"
 	"main/EventLoop"
-	"main/Socket"
+	"time"
 )
 
-func whenServing(el *EventLoop.EventLoop, _ *interface{}) {
-	fmt.Println("Server start...")
-}
+var count = 0
 
-func whenAccept(el *EventLoop.EventLoop, dataPtr *interface{}) {
-	data := (*dataPtr).([]string)
-	fmt.Println("Accept: ", data)
-}
-
-func echo(el *EventLoop.EventLoop, connPtr *interface{}) {
-	conn := (*connPtr).(*Socket.Conn)
-	msg := conn.Read()
-	msgstr := string(msg)
-	fmt.Println("Recv: ", msgstr)
-	msgstr += " pong"
-	conn.Write([]byte(msgstr))
+func periodTask(el *EventLoop.EventLoop, _ *interface{}) {
+	fmt.Printf("%d seconds passed\n", count)
+	count += 30
 }
 
 func main() {
-	litener, _ := Socket.NewListener("tcp4", "127.0.0.1:9090")
-	server := NewServer()
-	events := &EventLoop.Event{
-		Open:    whenAccept,
-		Serving: whenServing,
-		Data:    echo,
+	t := EventLoop.UserEvent{
+		Task:     periodTask,
+		Interval: 3 * time.Second,
 	}
-	server.AddListener(litener)
-	server.AddSystemEvent(events)
-	server.StartServe()
+	server := NewServer()
+	server.AddUserEvent(&t)
+	if err := server.StartServe(); err != nil {
+		panic(err)
+	}
 }

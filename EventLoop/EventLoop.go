@@ -2,7 +2,7 @@
  * @Description: EventLoop事件循环模块(目前一个server只有一个eventloop,通过不断修改triger_ptr来实现不同的操作)
  * @Author: Rocky Hoo
  * @Date: 2021-07-09 12:44:10
- * @LastEditTime: 2021-07-24 14:23:58
+ * @LastEditTime: 2021-07-25 15:18:45
  * @LastEditors: Please set LastEditors
  * @CopyRight: XiaoPeng Studio
  * Copyright (c) 2021 XiaoPeng Studio
@@ -10,6 +10,7 @@
 package EventLoop
 
 import (
+	"fmt"
 	"log"
 	"main/EventManager"
 	enum "main/Utils/Enum"
@@ -110,7 +111,9 @@ func (el *EventLoop) AddUserEvent(task *UserEvent) {
  */
 func (el *EventLoop) FindNearestTask() *UserEvent {
 	for _, user_event := range el.user_events {
-		if user_event.nexttriggerTime.After(time.Now()) {
+		fmt.Println("nextTrigerTime:", user_event.NexttriggerTime)
+		fmt.Println("now:", time.Now())
+		if user_event.NexttriggerTime.After(time.Now()) {
 			return user_event
 		}
 	}
@@ -170,7 +173,7 @@ func (el *EventLoop) TikTok() {
 	sleepTime := el.interval
 	nearestTask := el.FindNearestTask()
 	if nearestTask != nil {
-		sleepTime = nearestTask.nexttriggerTime.Sub(time.Now())
+		sleepTime = nearestTask.NexttriggerTime.Sub(time.Now())
 		if sleepTime < 0 {
 			sleepTime = 0
 		}
@@ -239,9 +242,9 @@ type Event struct {
  * @return {*}
  */
 type UserEvent struct {
-	nexttriggerTime time.Time     //下一次需要执行的具体时间
+	NexttriggerTime time.Time     //下一次需要执行的具体时间
 	Task            TrigerProcess //执行事件的函数
-	interval        time.Duration //运行的时间周期间隔
+	Interval        time.Duration //运行的时间周期间隔
 }
 
 /**
@@ -250,7 +253,7 @@ type UserEvent struct {
  * @return {*}
  */
 func (ue *UserEvent) setNextTrigerTime() {
-	ue.nexttriggerTime = ue.nexttriggerTime.Add(ue.interval)
+	ue.NexttriggerTime = time.Now().Add(ue.Interval)
 }
 
 type EventProc func(el *EventLoop, data interface{}) enum.Action
