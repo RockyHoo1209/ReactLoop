@@ -2,7 +2,7 @@
  * @Description: EventLoop测试模块
  * @Author: Rocky Hoo
  * @Date: 2021-07-12 15:59:49
- * @LastEditTime: 2021-07-24 14:18:44
+ * @LastEditTime: 2021-07-25 17:32:13
  * @LastEditors: Please set LastEditors
  * @CopyRight: XiaoPeng Studio
  * Copyright (c) 2021 XiaoPeng Studio
@@ -10,8 +10,8 @@
 package EventLoop
 
 import (
+	enum "Reactloop/Utils/Enum"
 	"fmt"
-	enum "reactloop/Utils/Enum"
 	"testing"
 	"time"
 )

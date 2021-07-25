@@ -10,7 +10,7 @@
 package EventManager
 
 import (
-	enum "reactloop/Utils/Enum"
+	enum "Reactloop/Utils/Enum"
 	"testing"
 )
 

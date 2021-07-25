@@ -1,16 +1,16 @@
 /*
  * @Author: Rocky Hoo
  * @Date: 2021-07-25 11:25:59
- * @LastEditTime: 2021-07-25 17:15:08
+ * @LastEditTime: 2021-07-25 17:30:37
  * @LastEditors: Please set LastEditors
  * @Description: 启动reactloop服务器
  * @FilePath: /ReactLoop/ReactLoop.go
  */
-package reactloop
+package Reactloop
 
 import (
-	"reactloop/EventLoop"
-	"reactloop/Socket"
+	"Reactloop/EventLoop"
+	"Reactloop/Socket"
 )
 
 type Server struct {

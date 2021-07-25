@@ -9,8 +9,8 @@
 package Socket
 
 import (
+	"Reactloop/EventLoop"
 	"fmt"
-	"reactloop/EventLoop"
 	"testing"
 )
 

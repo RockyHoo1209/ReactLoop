@@ -10,10 +10,10 @@
 package Socket
 
 import (
+	"Reactloop/EventLoop"
+	enum "Reactloop/Utils/Enum"
+	err "Reactloop/Utils/Error"
 	"net"
-	"reactloop/EventLoop"
-	enum "reactloop/Utils/Enum"
-	err "reactloop/Utils/Error"
 	"strconv"
 	"syscall"
 )

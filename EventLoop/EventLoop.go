@@ -10,10 +10,10 @@
 package EventLoop
 
 import (
+	"Reactloop/EventManager"
+	enum "Reactloop/Utils/Enum"
 	"fmt"
 	"log"
-	"reactloop/EventManager"
-	enum "reactloop/Utils/Enum"
 	"time"
 )
 

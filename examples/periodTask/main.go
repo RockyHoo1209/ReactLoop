@@ -9,9 +9,9 @@
 package main
 
 import (
+	"Reactloop"
+	"Reactloop/EventLoop"
 	"fmt"
-	"reactloop"
-	"reactloop/EventLoop"
 	"time"
 )
 
@@ -27,7 +27,7 @@ func main() {
 		Task:     periodTask,
 		Interval: 3 * time.Second,
 	}
-	server := reactloop.NewServer()
+	server := Reactloop.NewServer()
 	server.AddUserEvent(&t)
 	if err := server.StartServe(); err != nil {
 		panic(err)

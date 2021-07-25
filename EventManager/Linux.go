@@ -10,9 +10,9 @@
 package EventManager
 
 import (
+	enum "Reactloop/Utils/Enum"
+	err "Reactloop/Utils/Error"
 	"log"
-	enum "reactloop/Utils/Enum"
-	err "reactloop/Utils/Error"
 	"syscall"
 )
 
