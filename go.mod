@@ -1,4 +1,4 @@
-module main
+module reactloop
 
 go 1.15
 

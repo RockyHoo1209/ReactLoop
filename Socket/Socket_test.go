@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-07-20 15:31:58
- * @LastEditTime: 2021-07-24 23:04:21
+ * @LastEditTime: 2021-07-25 17:03:57
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /ReactLoop/Socket/Socket_test.go
@@ -10,7 +10,7 @@ package Socket
 
 import (
 	"fmt"
-	"main/EventLoop"
+	"reactloop/EventLoop"
 	"testing"
 )
 

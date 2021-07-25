@@ -1,7 +1,7 @@
 /*
  * @Author:RockyHoo
  * @Date: 2021-07-25 12:20:11
- * @LastEditTime: 2021-07-25 12:28:25
+ * @LastEditTime: 2021-07-25 17:21:00
  * @LastEditors: Please set LastEditors
  * @Description: 测试reactloop使用(ping-pong)
  * @FilePath: /ReactLoop/main.go
@@ -10,8 +10,9 @@ package main
 
 import (
 	"fmt"
-	"main/EventLoop"
-	"main/Socket"
+	"reactloop"
+	"reactloop/EventLoop"
+	"reactloop/Socket"
 )
 
 func whenServing(el *EventLoop.EventLoop, _ *interface{}) {
@@ -34,7 +35,7 @@ func echo(el *EventLoop.EventLoop, connPtr *interface{}) {
 
 func main() {
 	litener, _ := Socket.NewListener("tcp4", "127.0.0.1:9090")
-	server := NewServer()
+	server := reactloop.NewServer()
 	events := &EventLoop.Event{
 		Open:    whenAccept,
 		Serving: whenServing,

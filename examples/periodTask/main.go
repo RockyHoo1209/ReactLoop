@@ -1,16 +1,17 @@
 /*
  * @Author: RockyHoo
  * @Date: 2021-07-25 12:32:00
- * @LastEditTime: 2021-07-25 12:53:59
+ * @LastEditTime: 2021-07-25 17:22:20
  * @LastEditors: Please set LastEditors
  * @Description: 测试用户定义的周期函数
- * @FilePath: /ReactLoop/main.go
+ * @FilePath: /ReactLoop/reactloop.go
  */
 package main
 
 import (
 	"fmt"
-	"main/EventLoop"
+	"reactloop"
+	"reactloop/EventLoop"
 	"time"
 )
 
@@ -26,7 +27,7 @@ func main() {
 		Task:     periodTask,
 		Interval: 3 * time.Second,
 	}
-	server := NewServer()
+	server := reactloop.NewServer()
 	server.AddUserEvent(&t)
 	if err := server.StartServe(); err != nil {
 		panic(err)

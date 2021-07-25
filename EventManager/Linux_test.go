@@ -8,16 +8,16 @@
  * Copyright (c) 2021 XiaoPeng Studio
  */
 package EventManager
-import(
-	enum "main/Utils/Enum"	
+
+import (
+	enum "reactloop/Utils/Enum"
 	"testing"
 )
 
-  
-func TestLinux(*testing.T){
-	selector:=New(100)	  
-	selector.Register(1,enum.EVENT_READABLE,"hello")
+func TestLinux(*testing.T) {
+	selector := New(100)
+	selector.Register(1, enum.EVENT_READABLE, "hello")
 	selector.Poll(1)
-	selector.UnRegister(1,enum.EVENT_READABLE|enum.EVENT_WRITABLE)
+	selector.UnRegister(1, enum.EVENT_READABLE|enum.EVENT_WRITABLE)
 	selector.Close()
- }
+}

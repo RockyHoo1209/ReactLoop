@@ -2,7 +2,7 @@
  * @Description: EventLoop事件循环模块(目前一个server只有一个eventloop,通过不断修改triger_ptr来实现不同的操作)
  * @Author: Rocky Hoo
  * @Date: 2021-07-09 12:44:10
- * @LastEditTime: 2021-07-25 15:18:45
+ * @LastEditTime: 2021-07-25 17:03:50
  * @LastEditors: Please set LastEditors
  * @CopyRight: XiaoPeng Studio
  * Copyright (c) 2021 XiaoPeng Studio
@@ -12,8 +12,8 @@ package EventLoop
 import (
 	"fmt"
 	"log"
-	"main/EventManager"
-	enum "main/Utils/Enum"
+	"reactloop/EventManager"
+	enum "reactloop/Utils/Enum"
 	"time"
 )
 
