@@ -6,7 +6,7 @@
  * @Description: In User Settings Edit
  * @FilePath: /ReactLoop/Socket/Socket_test.go
  */
-package socket
+package Socket
 
 import (
 	"fmt"

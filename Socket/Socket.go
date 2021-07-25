@@ -2,12 +2,12 @@
  * @Description: Socket的封装类(模式perthred perloop)
  * @Author: Rocky Hoo
  * @Date: 2021-07-15 12:48:10
- * @LastEditTime: 2021-07-24 22:49:35
+ * @LastEditTime: 2021-07-25 11:32:43
  * @LastEditors: Please set LastEditors
  * @CopyRight: XiaoPeng Studio
  * Copyright (c) 2021 XiaoPeng Studio
  */
-package socket
+package Socket
 
 import (
 	"main/EventLoop"
