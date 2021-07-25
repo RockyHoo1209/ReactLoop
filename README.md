@@ -1,2 +1,2 @@
 # ReactLoop
-a eventloop framework base on reactor mod
+a eventloop socket server framework base on reactor mod
