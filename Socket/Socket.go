@@ -1,8 +1,8 @@
 /*
- * @Description: Socket的封装类(模式perthred perloop)
+ * @Description: Socket的封装类(模式perthred perloop)(目前server端实际只有一个eventloop在循环,理想情况应该是每一个connsocekt)
  * @Author: Rocky Hoo
  * @Date: 2021-07-15 12:48:10
- * @LastEditTime: 2021-07-25 17:04:05
+ * @LastEditTime: 2021-07-25 22:29:53
  * @LastEditors: Please set LastEditors
  * @CopyRight: XiaoPeng Studio
  * Copyright (c) 2021 XiaoPeng Studio
@@ -216,7 +216,7 @@ func (l *Listener) acceptEvent(el *EventLoop.EventLoop, data interface{}) enum.A
 		syscall.Close(confd)
 		return enum.CONTINUE
 	}
-	c, err := NewConn(confd, sa, el)
+	c, err := NewConn(confd, sa)
 	if err != nil {
 		return enum.CONTINUE
 	}
@@ -248,7 +248,7 @@ type Conn struct {
  * @param {syscall.Sockaddr} sa
  * @param {*EventLoop.EventLoop} event_loop(与accept操作共享一个eventloop)
  */
-func NewConn(confd int, sa syscall.Sockaddr, event_loop *EventLoop.EventLoop) (*Conn, error) {
+func NewConn(confd int, sa syscall.Sockaddr) (*Conn, error) {
 	network, addr, port, err := resolveSockaddrInfo(sa)
 	if err != nil {
 		return nil, err
